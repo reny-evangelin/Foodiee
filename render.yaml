@@ -1,0 +1,32 @@
+services:
+  # 1. FastAPI Backend Web Service
+  - type: web
+    name: foodiee-backend
+    env: python
+    rootDir: food-booking/backend
+    buildCommand: "pip install -r requirements.txt && python seed.py"
+    startCommand: "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.10.12
+
+  # 2. Vite Frontend Static Site
+  - type: web
+    name: foodiee-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: foodiee-backend
+          property: url
+          suffix: /api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
