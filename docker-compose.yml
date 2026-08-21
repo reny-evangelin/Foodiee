@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+
   # 1. Backend FastAPI Service
   backend:
     build:

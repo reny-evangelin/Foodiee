@@ -1,10 +1,15 @@
 # Stage 1: Build Frontend Vite static assets
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
+
+ENV NODE_ENV=development
+
 COPY frontend/package*.json ./
-RUN npm ci --prefer-offline --no-audit
+RUN npm install --production=false
+RUN npm install -g vite
+
 COPY frontend/ .
-RUN npm run build
+RUN vite build
 
 # Stage 2: Production Python Backend Container
 FROM python:3.10-slim
