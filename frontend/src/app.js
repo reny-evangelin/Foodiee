@@ -1,4 +1,5 @@
-import { CATEGORIES, FOOD_ITEMS, CAFETERIA_COUNTERS, generateBookingId } from './mockData.js';
+import { CATEGORIES, CAFETERIA_COUNTERS } from './mockData.js';
+import { fetchProducts, submitOrder } from './api.js';
 import './styles.css';
 
 // APPLICATION STATE
@@ -10,7 +11,9 @@ const state = {
   cart: {}, // { [itemId]: { item, quantity } }
   selectedCounter: CAFETERIA_COUNTERS[0].id,
   lastOrder: null,
-  theme: 'light'
+  theme: 'light',
+  foodItems: [],
+  customerName: 'Student' // Default for now
 };
 
 // DOM ROOT
@@ -32,7 +35,7 @@ function updateQuantity(itemId, delta) {
   const existing = state.cart[itemId];
   if (!existing) {
     if (delta > 0) {
-      const item = FOOD_ITEMS.find(f => f.id === itemId);
+      const item = state.foodItems.find(f => f.id === itemId);
       if (item) {
         state.cart[itemId] = { item, quantity: 1 };
       }
@@ -53,30 +56,57 @@ function removeItem(itemId) {
   render();
 }
 
-function confirmBooking() {
+async function confirmBooking() {
   const items = getCartItems();
   if (items.length === 0) return;
 
+  let customerName = state.customerName;
+  if (!customerName || customerName.trim() === '' || customerName === 'Student') {
+    const input = prompt("Please enter your name for the food order ticket:", "Student / Staff");
+    if (input && input.trim()) {
+      customerName = input.trim();
+      state.customerName = customerName;
+    } else {
+      customerName = "Student";
+    }
+  }
+
   const counterObj = CAFETERIA_COUNTERS.find(c => c.id === state.selectedCounter) || CAFETERIA_COUNTERS[0];
-  const { total } = getCartTotals();
 
-  state.lastOrder = {
-    bookingId: generateBookingId(),
-    items: JSON.parse(JSON.stringify(items)),
-    total,
-    counter: counterObj,
-    createdAt: new Date().toLocaleString('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }),
-    estimatedTime: '7 mins'
-  };
+  try {
+    const btn = document.getElementById('btn-confirm-booking');
+    if (btn) {
+      btn.innerText = 'Processing Order... ⏳';
+      btn.disabled = true;
+    }
 
-  // Clear cart
-  state.cart = {};
-  state.currentView = 'receipt';
-  render();
+    const backendOrder = await submitOrder(customerName, items);
+    
+    state.lastOrder = {
+      bookingId: backendOrder.order_token,
+      items: JSON.parse(JSON.stringify(items)),
+      total: backendOrder.final_total,
+      counter: counterObj,
+      customerName: backendOrder.customer_name || customerName,
+      createdAt: new Date().toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }),
+      estimatedTime: '5-10 mins',
+      priority: backendOrder.priority,
+      billId: backendOrder.bill_id
+    };
+
+    // Clear cart
+    state.cart = {};
+    state.currentView = 'receipt';
+    render();
+  } catch (err) {
+    alert("Failed to place order. Please ensure the backend server is running.");
+    render();
+  }
 }
+
 
 function toggleTheme() {
   state.theme = state.theme === 'light' ? 'dark' : 'light';
@@ -153,7 +183,7 @@ function render() {
 
 // 1. PAGE MENU VIEW RENDERER
 function renderMenuView() {
-  const filteredItems = FOOD_ITEMS.filter(item => {
+  const filteredItems = state.foodItems.filter(item => {
     const matchesCategory = state.selectedCategory === 'all' || item.category === state.selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
                           item.description.toLowerCase().includes(state.searchQuery.toLowerCase());
@@ -392,6 +422,14 @@ function renderReceiptView() {
         <div class="receipt-body">
           <div class="receipt-meta">
             <div class="meta-box">
+              <span>Customer Name</span>
+              <strong>👤 ${order.customerName || 'Student'}</strong>
+            </div>
+            <div class="meta-box">
+              <span>Queue Priority</span>
+              <strong>#${order.priority || 1}</strong>
+            </div>
+            <div class="meta-box">
               <span>Pickup Station</span>
               <strong>${order.counter.name.split(' - ')[1] || order.counter.name}</strong>
             </div>
@@ -408,6 +446,7 @@ function renderReceiptView() {
               <strong style="color: var(--secondary);">Pay at Counter</strong>
             </div>
           </div>
+
 
           <div class="receipt-items-list">
             <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
@@ -580,4 +619,8 @@ function bindEvents() {
 }
 
 // INITIAL STARTUP
-render();
+async function init() {
+  state.foodItems = await fetchProducts();
+  render();
+}
+init();

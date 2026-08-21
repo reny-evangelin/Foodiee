@@ -5,10 +5,16 @@ class ProductResponse(BaseModel):
     product_id: str
     product_name: str
     price: float
-    available: bool
+    category: str = "snacks"
+    is_veg: bool = True
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+    prep_time: str = "5-10 mins"
+    available: bool = True
 
     class Config:
         from_attributes = True
+
 
 
 class OrderItemCreate(BaseModel):

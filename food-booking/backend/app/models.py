@@ -10,8 +10,14 @@ class Product(Base):
     product_id = Column(String, unique=True, index=True, nullable=False)
     product_name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
+    category = Column(String, default="snacks", nullable=False)
+    is_veg = Column(Boolean, default=True, nullable=False)
+    image_url = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    prep_time = Column(String, default="5-10 mins", nullable=False)
     available = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
 
 
 class Order(Base):

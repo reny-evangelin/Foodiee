@@ -12,14 +12,24 @@ class BillingService:
         current_year = datetime.datetime.utcnow().year
         
         if client:
-            res = client.table("bills").select("id").like("bill_id", f"BILL{current_year}%").execute()
-            count = len(res.data)
+            try:
+                res = client.table("bills").select("id").like("bill_id", f"BILL{current_year}%").execute()
+                count = len(res.data) if res.data else 0
+            except Exception:
+                count = 0
         else:
             count = db.query(Bill).filter(
                 Bill.bill_id.like(f"BILL{current_year}%")
             ).count()
             
-        return f"BILL{current_year}{count + 1:05d}"
+        candidate = f"BILL{current_year}{count + 1:05d}"
+        if not client and db:
+            existing = db.query(Bill).filter(Bill.bill_id == candidate).first()
+            if existing:
+                import time
+                candidate = f"BILL{current_year}{count + 1:05d}-{int(time.time() * 1000) % 1000:03d}"
+        return candidate
+
 
     @staticmethod
     def process_billing_supabase(order_id: int, order_token: str, order_create_data: OrderCreate):

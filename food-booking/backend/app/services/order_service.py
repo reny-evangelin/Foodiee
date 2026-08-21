@@ -64,7 +64,12 @@ class OrderService:
         4. Commit transaction and return results.
         """
         if supabase_client:
-            return OrderService.create_order_supabase(order_data)
+            try:
+                return OrderService.create_order_supabase(order_data)
+            except Exception as e:
+                print(f"[WARN] Supabase order creation failed ({e}). Falling back to local SQLite.")
+
+
 
         today_date = datetime.datetime.utcnow().date()
         token, priority = OrderService.generate_daily_token(db, today_date)

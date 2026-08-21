@@ -16,7 +16,8 @@ def get_products(db: Session = Depends(get_db)):
             # Conform field names if needed, but they match standard
             return res.data
         except Exception as e:
-            print(f"⚠️ Supabase products table error: {e}. Falling back to local SQLite.")
+            print(f"[WARN] Supabase products table error: {e}. Falling back to local SQLite.")
+
             
     products = db.query(Product).filter(Product.available == True).all()
     return products

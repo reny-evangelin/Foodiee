@@ -26,9 +26,10 @@ if SUPABASE_URL and SUPABASE_KEY:
     try:
         from supabase import create_client
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("✅ Backend connected to Supabase PostgreSQL database")
+        print("[DB] Backend connected to Supabase PostgreSQL database")
     except Exception as e:
-        print(f"⚠️ Warning initializing Supabase client: {e}")
+        print(f"[WARN] Warning initializing Supabase client: {e}")
+
 
 def get_db():
     db = SessionLocal()
